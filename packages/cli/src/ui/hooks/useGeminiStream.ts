@@ -935,11 +935,18 @@ export const useGeminiStream = (
       const splitPoint = findLastSafeSplitPoint(newGeminiMessageBuffer);
       if (splitPoint === newGeminiMessageBuffer.length) {
         // Update the existing message with accumulated content
-        setPendingHistoryItem((item) => ({
-          type: item?.type as 'gemini' | 'gemini_content',
-          text: newGeminiMessageBuffer,
-          ...(item && 'timestamp' in item ? { timestamp: item.timestamp } : {}),
-        }));
+        setPendingHistoryItem((item) => {
+          const base: HistoryItemWithoutId = {
+            type: item?.type as 'gemini' | 'gemini_content',
+            text: newGeminiMessageBuffer,
+          };
+          if (item && 'timestamp' in item) {
+            (base as HistoryItemGemini).timestamp = (
+              item as HistoryItemGemini
+            ).timestamp;
+          }
+          return base;
+        });
       } else {
         // This indicates that we need to split up this Gemini Message.
         // Splitting a message is primarily a performance consideration. There is a
