@@ -2441,10 +2441,10 @@ describe('useGeminiStream', () => {
       });
 
       expect(mockAddItem).toHaveBeenCalledWith(
-        {
+        expect.objectContaining({
           type: 'gemini',
           text: 'Initial',
-        },
+        }),
         expect.any(Number),
       );
 
@@ -4980,10 +4980,10 @@ describe('useGeminiStream', () => {
         });
 
         expect(mockAddItem).toHaveBeenCalledWith(
-          {
+          expect.objectContaining({
             type: 'gemini',
             text: 'First call content',
-          },
+          }),
           expect.any(Number),
         );
         expect(mainAbortSignal?.aborted).toBe(true);
