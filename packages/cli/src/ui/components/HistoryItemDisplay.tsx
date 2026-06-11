@@ -57,6 +57,7 @@ import { MemorySavedMessage } from './messages/MemorySavedMessage.js';
 import { DiffStatsDisplay } from './messages/DiffStatsDisplay.js';
 import { GoalStatusMessage } from './messages/GoalStatusMessage.js';
 import { useCompactMode } from '../contexts/CompactModeContext.js';
+import { useSettings } from '../contexts/SettingsContext.js';
 
 interface HistoryItemDisplayProps {
   item: HistoryItem;
@@ -103,6 +104,8 @@ const HistoryItemDisplayComponent: React.FC<HistoryItemDisplayProps> = ({
   sourceCopyIndexOffsets,
 }) => {
   const { compactMode } = useCompactMode();
+  const settings = useSettings();
+  const showTimestamps = settings.merged.output?.showTimestamps === true;
 
   const isHiddenInCompact =
     compactMode &&
@@ -140,15 +143,26 @@ const HistoryItemDisplayComponent: React.FC<HistoryItemDisplayProps> = ({
         <UserShellMessage text={itemForDisplay.text} />
       )}
       {itemForDisplay.type === 'gemini' && (
-        <AssistantMessage
-          text={itemForDisplay.text}
-          isPending={isPending}
-          availableTerminalHeight={
-            availableTerminalHeightGemini ?? availableTerminalHeight
-          }
-          contentWidth={contentWidth}
-          sourceCopyIndexOffsets={sourceCopyIndexOffsets}
-        />
+        <>
+          {showTimestamps && itemForDisplay.timestamp != null && (
+            <Text dimColor>
+              [
+              {new Date(itemForDisplay.timestamp).toLocaleTimeString('en-US', {
+                hour12: false,
+              })}
+              ]
+            </Text>
+          )}
+          <AssistantMessage
+            text={itemForDisplay.text}
+            isPending={isPending}
+            availableTerminalHeight={
+              availableTerminalHeightGemini ?? availableTerminalHeight
+            }
+            contentWidth={contentWidth}
+            sourceCopyIndexOffsets={sourceCopyIndexOffsets}
+          />
+        </>
       )}
       {itemForDisplay.type === 'gemini_content' && (
         <AssistantMessageContent
