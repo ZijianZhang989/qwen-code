@@ -350,7 +350,7 @@ describe('<HistoryItemDisplay />', () => {
       expect(lastFrame()).toMatch(/\[\d{2}:\d{2}:\d{2}\]/);
     });
 
-    it('does not render timestamp when isPending is true', () => {
+    it('renders timestamp even when isPending is true (streaming)', () => {
       const { lastFrame } = renderWithProviders(
         <HistoryItemDisplay
           {...baseItem}
@@ -359,7 +359,7 @@ describe('<HistoryItemDisplay />', () => {
         />,
         { settings: makeTimestampSettings() },
       );
-      expect(lastFrame()).not.toMatch(/\[\d{2}:\d{2}:\d{2}\]/);
+      expect(lastFrame()).toMatch(/\[\d{2}:\d{2}:\d{2}\]/);
     });
 
     it('does not render timestamp when timestamp field is missing', () => {

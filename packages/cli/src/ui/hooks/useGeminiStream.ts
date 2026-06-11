@@ -350,8 +350,7 @@ export const useGeminiStream = (
   // (same turn, performance-split continuation) does not.
   const commitItem = useCallback(
     (item: HistoryItemWithoutId, userMessageTimestamp: number): number => {
-      if (item.type === 'gemini') {
-        // Record when the assistant response arrived, not when the user sent their message.
+      if (item.type === 'gemini' && !(item as HistoryItemGemini).timestamp) {
         (item as HistoryItemGemini).timestamp = Date.now();
       }
       return addItem(item, userMessageTimestamp);
@@ -939,6 +938,7 @@ export const useGeminiStream = (
         setPendingHistoryItem((item) => ({
           type: item?.type as 'gemini' | 'gemini_content',
           text: newGeminiMessageBuffer,
+          ...(item && 'timestamp' in item ? { timestamp: item.timestamp } : {}),
         }));
       } else {
         // This indicates that we need to split up this Gemini Message.
