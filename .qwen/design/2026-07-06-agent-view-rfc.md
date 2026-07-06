@@ -1,4 +1,4 @@
-# RFC: daemon-backed Agent View for managing background sessions
+# RFC: Agent View for managing background sessions
 
 ## Summary
 
