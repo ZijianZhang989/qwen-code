@@ -60,7 +60,11 @@ export const formatTokenCount = (count: number): string => {
     return `${count}`;
   }
   if (count < 10000) {
-    return `${(count / 1000).toFixed(1)}k`;
+    const formatted = (count / 1000).toFixed(1);
+    if (parseFloat(formatted) >= 10) {
+      return `${Math.round(count / 1000)}k`;
+    }
+    return `${formatted}k`;
   }
   return `${Math.floor(count / 1000)}k`;
 };

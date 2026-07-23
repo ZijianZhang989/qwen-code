@@ -203,7 +203,7 @@ describe('formatters', () => {
     it('should display with k suffix and one decimal for counts 1000-9999', () => {
       expect(formatTokenCount(1000)).toBe('1.0k');
       expect(formatTokenCount(5400)).toBe('5.4k');
-      expect(formatTokenCount(9999)).toBe('10.0k');
+      expect(formatTokenCount(9999)).toBe('10k');
     });
 
     it('should display with k suffix without decimal for counts 10000 and above', () => {
