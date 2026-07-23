@@ -187,7 +187,7 @@ ${testRootDir}${path.sep}
       maxItems: 1,
     });
     const expected = `
-Showing up to 1 items:
+Showing up to 1 item:
 
 ${testRootDir}${path.sep}
 ├───fileA1.ts

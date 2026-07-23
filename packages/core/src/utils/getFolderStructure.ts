@@ -325,7 +325,8 @@ export async function getFolderStructure(
     formatStructure(structureRoot, '', true, true, structureLines);
 
     // 3. Build the final output string
-    return `Showing up to ${mergedOptions.maxItems} items:\n\n${resolvedPath}${path.sep}\n${structureLines.join('\n')}`;
+    const noun = mergedOptions.maxItems === 1 ? 'item' : 'items';
+    return `Showing up to ${mergedOptions.maxItems} ${noun}:\n\n${resolvedPath}${path.sep}\n${structureLines.join('\n')}`;
   } catch (error: unknown) {
     debugLogger.error(
       `Error getting folder structure for ${resolvedPath}:`,
