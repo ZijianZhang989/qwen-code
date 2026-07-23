@@ -561,10 +561,7 @@ export function isControlResponse(msg: any): msg is CLIControlResponse {
 
 export function isControlCancel(msg: any): msg is ControlCancelRequest {
   return (
-    msg &&
-    typeof msg === 'object' &&
-    msg.type === 'control_cancel_request' &&
-    'request_id' in msg
+    msg && typeof msg === 'object' && msg.type === 'control_cancel_request'
   );
 }
 
