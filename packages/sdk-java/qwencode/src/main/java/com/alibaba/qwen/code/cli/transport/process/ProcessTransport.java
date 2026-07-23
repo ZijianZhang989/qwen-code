@@ -18,6 +18,7 @@ import java.io.OutputStreamWriter;
 import java.lang.ProcessBuilder.Redirect;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
@@ -132,6 +133,13 @@ public class ProcessTransport implements Transport {
         }
         if (process != null) {
             process.destroy();
+            try {
+                if (!process.waitFor(5, TimeUnit.SECONDS)) {
+                    process.destroyForcibly();
+                }
+            } catch (InterruptedException ignored) {
+                Thread.currentThread().interrupt();
+            }
         }
     }
 
