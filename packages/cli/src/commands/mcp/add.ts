@@ -56,6 +56,13 @@ async function addMcpServer(
   const settings = loadSettings(process.cwd());
   const inHome = settings.workspace.path === settings.user.path;
 
+  if (timeout !== undefined && (!Number.isFinite(timeout) || timeout <= 0)) {
+    writeStderrLine(
+      'Error: --timeout must be a positive number (in milliseconds).',
+    );
+    process.exit(1);
+  }
+
   if (scope === 'project' && inHome) {
     writeStderrLine(
       'Error: Please use --scope user to edit settings in the home directory.',
