@@ -19,7 +19,7 @@ import {
 
 describe('SettingsSchema', () => {
   describe('getSettingsSchema', () => {
-    it('should contain all expected top-level settings', () => {
+    it('should contain core top-level settings', () => {
       const expectedSettings: Array<keyof Settings> = [
         'mcpServers',
         'general',
