@@ -120,24 +120,6 @@ export type {
 // GUI-only types (not used by server/handler code)
 // =============================================================================
 
-/**
- * Browser toolbar window IPC channels (preload <-> BrowserPaneManager).
- * Kept separate from RPC_CHANNELS because these are scoped to toolbar windows.
- */
-export const BROWSER_TOOLBAR_CHANNELS = {
-  NAVIGATE: 'browser-toolbar:navigate',
-  GO_BACK: 'browser-toolbar:go-back',
-  GO_FORWARD: 'browser-toolbar:go-forward',
-  RELOAD: 'browser-toolbar:reload',
-  STOP: 'browser-toolbar:stop',
-  OPEN_MENU: 'browser-toolbar:open-menu',
-  TOGGLE_DOCK_EXPANDED: 'browser-toolbar:toggle-dock-expanded',
-  HIDE: 'browser-toolbar:hide',
-  DESTROY: 'browser-toolbar:destroy',
-  STATE_UPDATE: 'browser-toolbar:state-update',
-  THEME_COLOR: 'browser-toolbar:theme-color',
-} as const;
-
 /** Tool icon mapping entry from tool-icons.json (with icon resolved to data URL) */
 export interface ToolIconMapping {
   id: string;
