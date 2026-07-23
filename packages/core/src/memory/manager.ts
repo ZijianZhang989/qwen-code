@@ -571,12 +571,13 @@ export class MemoryManager {
     if (promises.length === 0) return true;
     const waitAll = Promise.allSettled(promises).then(() => true);
     if (!options.timeoutMs || options.timeoutMs <= 0) return waitAll;
-    return Promise.race<boolean>([
-      waitAll,
-      new Promise<boolean>((resolve) =>
-        setTimeout(() => resolve(false), options.timeoutMs),
-      ),
-    ]);
+    let timerId: ReturnType<typeof setTimeout> | undefined;
+    const timeout = new Promise<boolean>((resolve) => {
+      timerId = setTimeout(() => resolve(false), options.timeoutMs);
+    });
+    const result = await Promise.race<boolean>([waitAll, timeout]);
+    if (timerId !== undefined) clearTimeout(timerId);
+    return result;
   }
 
   private track<T>(taskId: string, promise: Promise<T>): Promise<T> {
