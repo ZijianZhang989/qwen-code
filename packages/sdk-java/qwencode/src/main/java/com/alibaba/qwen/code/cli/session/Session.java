@@ -113,7 +113,7 @@ public class Session {
      */
     public Optional<Boolean> interrupt() throws SessionControlException {
         checkAvailable();
-        return processControlRequest(new CLIControlRequest<CLIControlInterruptRequest>().setRequest(new CLIControlInterruptRequest()).toString());
+        return processControlRequest("interrupt", new CLIControlRequest<CLIControlInterruptRequest>().setRequest(new CLIControlInterruptRequest()).toString());
     }
 
     /**
@@ -127,7 +127,7 @@ public class Session {
         checkAvailable();
         CLIControlSetModelRequest cliControlSetModelRequest = new CLIControlSetModelRequest();
         cliControlSetModelRequest.setModel(modelName);
-        return processControlRequest(new CLIControlRequest<CLIControlSetModelRequest>().setRequest(cliControlSetModelRequest).toString());
+        return processControlRequest("set model", new CLIControlRequest<CLIControlSetModelRequest>().setRequest(cliControlSetModelRequest).toString());
     }
 
     /**
@@ -141,11 +141,11 @@ public class Session {
         checkAvailable();
         CLIControlSetPermissionModeRequest cliControlSetPermissionModeRequest = new CLIControlSetPermissionModeRequest();
         cliControlSetPermissionModeRequest.setMode(permissionMode.getValue());
-        return processControlRequest(
+        return processControlRequest("set permission mode",
                 new CLIControlRequest<CLIControlSetPermissionModeRequest>().setRequest(cliControlSetPermissionModeRequest).toString());
     }
 
-    private Optional<Boolean> processControlRequest(String request) throws SessionControlException {
+    private Optional<Boolean> processControlRequest(String operationName, String request) throws SessionControlException {
         try {
             if (transport.isReading()) {
                 transport.inputNoWaitResponse(request);
@@ -156,7 +156,7 @@ public class Session {
                 return Optional.of("success".equals(cliControlResponse.getResponse().getSubtype()));
             }
         } catch (Exception e) {
-            throw new SessionControlException("Failed to set model", e);
+            throw new SessionControlException("Failed to " + operationName, e);
         }
     }
 
