@@ -46,7 +46,7 @@ Plan Mode instructs Qwen Code to create a plan by analyzing the codebase with **
 
 You can switch into Plan Mode during a session using **Shift+Tab** (or **Tab** on Windows) to cycle through permission modes.
 
-If you are in Normal Mode, **Shift+Tab** (or **Tab** on Windows) first switches into `auto-edits` Mode, indicated by `⏵⏵ accept edits on` at the bottom of the terminal. A subsequent **Shift+Tab** (or **Tab** on Windows) will switch into Plan Mode, indicated by `⏸ plan mode`.
+If you are in Default Mode, **Shift+Tab** (or **Tab** on Windows) first switches into `auto-edit` Mode, indicated by `⏵⏵ accept edits on` at the bottom of the terminal. A subsequent **Shift+Tab** (or **Tab** on Windows) will switch into Plan Mode, indicated by `⏸ plan mode`.
 
 **Use the `/plan` command**
 
@@ -122,7 +122,7 @@ You can switch into Ask Permissions Mode during a session using **Shift+Tab**�
 
 **Start a new session in Ask Permissions Mode**
 
-Ask Permissions Mode is the initial mode when you start Qwen Code. If you've changed modes and want to return to Ask Permissions Mode, use:
+Auto Mode is the initial mode when you start Qwen Code. If you've changed modes and want to return to Ask Permissions Mode, use:
 
 ```
 /approval-mode default
@@ -130,7 +130,7 @@ Ask Permissions Mode is the initial mode when you start Qwen Code. If you've cha
 
 **Run "headless" queries in Ask Permissions Mode**
 
-When running headless commands, Ask Permissions Mode is the default behavior. You can explicitly specify it with:
+When running headless commands, Auto Mode is the default behavior. You can explicitly specify it with:
 
 ```
 qwen --prompt "Analyze this code for potential bugs"
@@ -388,6 +388,6 @@ Plan Mode → Ask Permissions Mode → Auto-Edit Mode → Auto Mode → YOLO Mod
 ### Mode Usage Recommendations
 
 1. **New to codebase**: Start with **Plan Mode**​ for safe exploration
-2. **Daily development tasks**: Use **Auto-Accept Edits**​ (default mode), efficient and safe
+2. **Daily development tasks**: Use **Auto-Accept Edits**​ (recommended for daily development), efficient and safe
 3. **Automated scripts**: Use **YOLO Mode**​ in controlled environments for full automation
 4. **Complex refactoring**: Use **Plan Mode**​ first for detailed planning, then switch to appropriate mode for execution
