@@ -308,5 +308,5 @@ public class Session {
     }
 
     /** Default event consumption timeout is 60 seconds */
-    Timeout defaultEventConsumeTimeout = Timeout.TIMEOUT_60_SECONDS;
+    private final Timeout defaultEventConsumeTimeout = Timeout.TIMEOUT_60_SECONDS;
 }
