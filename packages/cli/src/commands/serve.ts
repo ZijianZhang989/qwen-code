@@ -141,8 +141,7 @@ function primaryWorkspaceArg(
 
 export const serveCommand: CommandModule<unknown, ServeArgs> = {
   command: 'serve',
-  describe:
-    'Run Qwen Code as a local HTTP daemon (Stage 1 experimental: --http-bridge)',
+  describe: 'Run Qwen Code as a local HTTP daemon',
   builder: (yargs: Argv) =>
     yargs
       .option('port', {

@@ -27,10 +27,7 @@ export const TOP_LEVEL_COMMANDS = [
     'review <command>',
     'Internal helpers used by the /review skill (PR worktree setup, context fetch, rules loading, presubmit checks, cleanup)',
   ],
-  [
-    'serve',
-    'Run Qwen Code as a local HTTP daemon (Stage 1 experimental: --http-bridge)',
-  ],
+  ['serve', 'Run Qwen Code as a local HTTP daemon'],
   ['sessions <command>', 'Manage Qwen Code sessions'],
   ['update', 'Check for Qwen Code updates and install if available'],
 ] as const;
