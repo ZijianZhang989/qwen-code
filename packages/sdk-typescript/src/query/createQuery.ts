@@ -73,6 +73,7 @@ export function query({
     authType: options.authType,
     includePartialMessages: options.includePartialMessages,
     resume: options.resume,
+    continue: options.continue,
     sessionId,
     forkSession: options.forkSession,
     maxToolCalls: options.maxToolCalls,
