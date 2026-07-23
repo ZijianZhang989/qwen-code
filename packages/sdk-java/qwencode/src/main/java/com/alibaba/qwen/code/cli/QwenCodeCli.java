@@ -73,6 +73,7 @@ public class QwenCodeCli {
                 response.add(JSON.toJSONString(toolResultAssistantContent));
             }
 
+            @Override
             public void onOtherContent(Session session, AssistantContent<?> other) {
                 response.add(JSON.toJSONString(other.getContentOfAssistant()));
             }
