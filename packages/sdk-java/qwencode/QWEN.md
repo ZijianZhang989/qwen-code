@@ -293,7 +293,6 @@ The SDK provides specific exception types for different error scenarios:
 
 - `SessionControlException`: Thrown when there's an issue with session control (creation, initialization, etc.)
 - `SessionSendPromptException`: Thrown when there's an issue sending a prompt or receiving a response
-- `SessionClosedException`: Thrown when attempting to use a closed session
 
 ## Project Structure
 

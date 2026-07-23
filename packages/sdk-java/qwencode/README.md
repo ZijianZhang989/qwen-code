@@ -23,14 +23,14 @@ Add the following dependency to your Maven `pom.xml`:
 <dependency>
     <groupId>com.alibaba</groupId>
     <artifactId>qwencode-sdk</artifactId>
-    <version>{$version}</version>
+    <version>0.0.3-alpha</version>
 </dependency>
 ```
 
 Or if using Gradle, add to your `build.gradle`:
 
 ```gradle
-implementation 'com.alibaba:qwencode-sdk:{$version}'
+implementation 'com.alibaba:qwencode-sdk:0.0.3-alpha'
 ```
 
 ## Building and Running
@@ -278,7 +278,6 @@ The SDK provides specific exception types for different error scenarios:
 
 - `SessionControlException`: Thrown when there's an issue with session control (creation, initialization, etc.)
 - `SessionSendPromptException`: Thrown when there's an issue sending a prompt or receiving a response
-- `SessionClosedException`: Thrown when attempting to use a closed session
 
 ## FAQ / Troubleshooting
 
