@@ -146,5 +146,11 @@ function delayWithAbort(ms: number, signal?: AbortSignal): Promise<void> {
       reject(new Error('Retry aborted'));
     }
     signal?.addEventListener('abort', onAbort, { once: true });
+    // Re-check after listener registration to close the TOCTOU race window.
+    if (signal?.aborted) {
+      clearTimeout(timer);
+      signal.removeEventListener('abort', onAbort);
+      reject(new Error('Retry aborted'));
+    }
   });
 }
