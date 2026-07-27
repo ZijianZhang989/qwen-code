@@ -73,6 +73,7 @@ export class AsyncHookRegistry {
     this.timeoutCheckTimer = setInterval(() => {
       this.checkTimeouts();
     }, interval);
+    this.timeoutCheckTimer.unref();
   }
 
   /**
