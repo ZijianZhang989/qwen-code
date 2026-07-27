@@ -81,7 +81,7 @@ You can also use this library directly in the browser via CDN:
         <ChatViewer messages={/* your messages */} />
       );
 
-      ReactDOM.render(<App />, document.getElementById('root'));
+      ReactDOM.createRoot(document.getElementById('root')).render(<App />);
     </script>
   </body>
 </html>
@@ -145,7 +145,7 @@ You can also use this library directly in the browser via CDN:
         ],
       });
 
-      ReactDOM.render(App, document.getElementById('root'));
+      ReactDOM.createRoot(document.getElementById('root')).render(App);
     </script>
   </body>
 </html>
