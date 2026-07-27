@@ -183,10 +183,6 @@ export enum SettingScope {
   SystemDefaults = 'SystemDefaults',
 }
 
-export interface CheckpointingSettings {
-  enabled?: boolean;
-}
-
 export interface AccessibilitySettings {
   enableLoadingPhrases?: boolean;
   screenReader?: boolean;
