@@ -847,6 +847,7 @@ export class Query implements AsyncIterable<SDKMessage> {
       }
     }
     this.sdkMcpTransports.clear();
+    this.sdkMcpServers.clear();
     logger.info('Query is closed');
   }
 
