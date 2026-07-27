@@ -1992,6 +1992,7 @@ export class McpClientManager {
       await this.performHealthCheck(serverName);
     }, this.healthConfig.checkIntervalMs);
 
+    timer.unref();
     this.healthCheckTimers.set(serverName, timer);
   }
 
