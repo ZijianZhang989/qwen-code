@@ -113,8 +113,7 @@ export const SETTINGS_VERSION_KEY = '$version';
  * Conversion rules:
  *   tools.allowed  → permissions.allow (bypass confirmation)
  *   tools.exclude  → permissions.deny  (block tools)
- *   tools.core     → permissions.allow (only listed tools enabled)
- *                    + permissions.deny with a wildcard deny-all if needed
+ *   tools.core     → permissions.allow (explicit enables; whitelist via Config.getCoreTools())
  *
  * Returns the updated settings object, or null if no migration is needed.
  */
