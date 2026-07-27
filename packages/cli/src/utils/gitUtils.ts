@@ -88,8 +88,6 @@ export const getLatestGitHubRelease = async (
   proxy?: string,
 ): Promise<string> => {
   try {
-    const controller = new AbortController();
-
     const endpoint = `https://api.github.com/repos/QwenLM/qwen-code-action/releases/latest`;
 
     const response = await fetch(endpoint, {
@@ -100,7 +98,7 @@ export const getLatestGitHubRelease = async (
         'X-GitHub-Api-Version': '2022-11-28',
       },
       dispatcher: proxy ? new ProxyAgent(proxy) : undefined,
-      signal: AbortSignal.any([AbortSignal.timeout(30_000), controller.signal]),
+      signal: AbortSignal.timeout(30_000),
     } as RequestInit);
 
     if (!response.ok) {
