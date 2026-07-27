@@ -157,6 +157,7 @@ export async function activate(context: vscode.ExtensionContext) {
     },
   );
 
+  context.subscriptions.push(diffManager);
   // Helper function to create a new WebView provider instance
   const createWebViewProvider = (): WebViewProvider =>
     chatProviderRegistry!.createEditorProvider();
