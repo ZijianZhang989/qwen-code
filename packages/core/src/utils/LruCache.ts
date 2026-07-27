@@ -10,7 +10,7 @@ export class LruCache<K, V> {
 
   constructor(maxSize: number) {
     this.cache = new Map<K, V>();
-    this.maxSize = maxSize;
+    this.maxSize = Math.max(1, maxSize);
   }
 
   get(key: K): V | undefined {
