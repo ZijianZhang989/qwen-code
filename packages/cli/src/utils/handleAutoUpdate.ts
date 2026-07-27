@@ -151,6 +151,7 @@ export function setUpdateHandler(
 ) {
   let successfullyInstalled = false;
   const pendingNotifications: HistoryItemWithoutId[] = [];
+  let updateNagTimer: ReturnType<typeof setTimeout> | null = null;
 
   const addItemOrDefer = (item: HistoryItemWithoutId) => {
     if (isIdleRef.current) {
@@ -163,7 +164,7 @@ export function setUpdateHandler(
   const handleUpdateReceived = (info: UpdateObject) => {
     setUpdateInfo(info);
     const savedMessage = info.message;
-    setTimeout(() => {
+    updateNagTimer = setTimeout(() => {
       if (!successfullyInstalled) {
         addItemOrDefer({
           type: MessageType.INFO,
@@ -208,6 +209,10 @@ export function setUpdateHandler(
     updateEventEmitter.off('update-failed', handleUpdateFailed);
     updateEventEmitter.off('update-success', handleUpdateSuccess);
     updateEventEmitter.off('update-info', handleUpdateInfo);
+    if (updateNagTimer) {
+      clearTimeout(updateNagTimer);
+      updateNagTimer = null;
+    }
     pendingNotifications.length = 0;
   };
 
