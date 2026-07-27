@@ -5,7 +5,7 @@
  */
 
 import type React from 'react';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Box, Text } from 'ink';
 import {
   type ToolAskUserQuestionConfirmationDetails,
@@ -69,6 +69,16 @@ export const AskUserQuestionDialog: React.FC<AskUserQuestionDialogProps> = ({
     Record<number, string>
   >({});
   const customInputValuesRef = useRef<Record<number, string>>({});
+  const advanceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (advanceTimerRef.current) {
+        clearTimeout(advanceTimerRef.current);
+      }
+    },
+    [],
+  );
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [multiSelectedOptions, setMultiSelectedOptions] = useState<
     Record<number, string[]>
@@ -169,7 +179,7 @@ export const AskUserQuestionDialog: React.FC<AskUserQuestionDialogProps> = ({
         answers: { [currentQuestionIndex]: value },
       });
     } else if (currentQuestionIndex < totalTabs - 1) {
-      setTimeout(() => {
+      advanceTimerRef.current = setTimeout(() => {
         setCurrentQuestionIndex((prev) => Math.min(prev + 1, totalTabs - 1));
         setSelectedIndex(0);
       }, 150);
