@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useCallback, useState, useEffect } from 'react';
+import { useCallback, useState, useEffect, useRef } from 'react';
 import { Box, Text } from 'ink';
 import type { WizardStepProps } from '../types.js';
 import type {
@@ -34,6 +34,16 @@ export function CreationSummary({
   const [warnings, setWarnings] = useState<string[]>([]);
 
   const launchEditor = useLaunchEditor();
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+    },
+    [],
+  );
 
   const truncateText = (text: string, maxLength: number): string => {
     if (text.length <= maxLength) return text;
@@ -158,8 +168,7 @@ export function CreationSummary({
   // Common method to show success and auto-close
   const showSuccessAndClose = useCallback(() => {
     setSaveSuccess(true);
-    // Auto-close after successful save
-    setTimeout(() => {
+    timerRef.current = setTimeout(() => {
       onCancel();
     }, 2000);
   }, [onCancel]);
