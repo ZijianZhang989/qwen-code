@@ -722,6 +722,7 @@ export class TmuxBackend implements Backend {
     this.exitPollTimer = setInterval(() => {
       void this.pollPaneStatus();
     }, EXIT_POLL_INTERVAL_MS);
+    this.exitPollTimer.unref();
   }
 
   private stopExitPolling(): void {
