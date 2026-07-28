@@ -87,6 +87,7 @@ export class DualOutputBridge {
   private readonly sessionId: string;
   private active = true;
   private shutdownPromise: Promise<void> | null = null;
+  private readonly errorHandler: (err: Error) => void;
   private readonly unsubscribeRecordingFailure: () => void;
 
   constructor(
@@ -158,7 +159,7 @@ export class DualOutputBridge {
       }
     }
 
-    this.stream.on('error', (err) => {
+    this.errorHandler = (err: Error) => {
       const code = (err as NodeJS.ErrnoException).code;
       if (code === 'EPIPE' || code === 'ERR_STREAM_DESTROYED') {
         debugLogger.warn('DualOutput: consumer disconnected, disabling');
@@ -172,7 +173,8 @@ export class DualOutputBridge {
       }
       // Disable on any stream error to prevent repeated write failures
       this.active = false;
-    });
+    };
+    this.stream.on('error', this.errorHandler);
 
     this.adapter = new StreamJsonOutputAdapter(
       config,
@@ -375,6 +377,7 @@ export class DualOutputBridge {
 
   shutdown(): Promise<void> {
     if (this.shutdownPromise) return this.shutdownPromise;
+    this.stream.off('error', this.errorHandler);
     this.unsubscribeRecordingFailure();
     // Try to emit session_end before tearing the stream down so consumers
     // get a definitive termination signal rather than inferring it from

@@ -2520,6 +2520,10 @@ export class WebViewProvider {
    * Dispose the WebView provider and clean up resources
    */
   dispose(): void {
+    if (this.autoAuthTimer) {
+      clearTimeout(this.autoAuthTimer);
+      this.autoAuthTimer = null;
+    }
     // Unblock any pending ACP Promises before tearing down
     if (this.pendingPermissionResolve) {
       this.pendingPermissionResolve('cancel');

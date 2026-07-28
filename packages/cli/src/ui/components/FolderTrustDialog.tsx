@@ -31,14 +31,11 @@ export const FolderTrustDialog: React.FC<FolderTrustDialogProps> = ({
   isRestarting,
 }) => {
   useEffect(() => {
-    const doRelaunch = async () => {
-      if (isRestarting) {
-        setTimeout(async () => {
-          await relaunchApp();
-        }, 250);
-      }
-    };
-    doRelaunch();
+    if (!isRestarting) return;
+    const timer = setTimeout(async () => {
+      await relaunchApp();
+    }, 250);
+    return () => clearTimeout(timer);
   }, [isRestarting]);
 
   useKeypress(

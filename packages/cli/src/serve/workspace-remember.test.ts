@@ -446,6 +446,14 @@ describe('workspace memory remember routes', () => {
       .expect((res) => expect(res.body.code).toBe('invalid_content'));
     await request(app)
       .post('/workspace/memory/remember')
+      .send({ content: 42 })
+      .expect(400)
+      .expect((res) => {
+        expect(res.body.code).toBe('invalid_content');
+        expect(res.body.error).toContain('must be a string');
+      });
+    await request(app)
+      .post('/workspace/memory/remember')
       .send({ content: 'x'.repeat(64 * 1024 + 1) })
       .expect(400)
       .expect((res) => expect(res.body.code).toBe('invalid_content'));

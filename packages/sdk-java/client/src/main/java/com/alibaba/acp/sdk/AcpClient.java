@@ -169,6 +169,6 @@ public class AcpClient {
         if (transport != null) {
             transport.close();
         }
-        //ThreadPoolConfig.shutdown();
+        ThreadPoolConfig.shutdown();
     }
 }

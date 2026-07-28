@@ -128,6 +128,14 @@ describe('isTransientNetworkError', () => {
     ).toBe(true);
   });
 
+  it('returns true for ECONNRESET even when message contains 401 substring', () => {
+    expect(
+      isTransientNetworkError(
+        new Error('read ECONNRESET connecting to localhost:4010'),
+      ),
+    ).toBe(true);
+  });
+
   it('returns false for message containing 502 as non-status number', () => {
     expect(
       isTransientNetworkError(new Error('processed 502 items successfully')),

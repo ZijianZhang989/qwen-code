@@ -1,4 +1,10 @@
-import { useCallback, useState, type ReactNode } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import styles from './MessageTimestamp.module.css';
 
 interface MessageTimestampProps {
@@ -24,13 +30,21 @@ export function MessageTimestamp({
   copyTitle = 'Copy',
 }: MessageTimestampProps) {
   const [copied, setCopied] = useState(false);
+  const timerRef = useRef<number | null>(null);
+  useEffect(
+    () => () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    },
+    [],
+  );
   const handleCopy = useCallback(() => {
     if (!copyText) return;
     void navigator.clipboard
       ?.writeText(copyText)
       .then(() => {
         setCopied(true);
-        window.setTimeout(() => setCopied(false), 2000);
+        if (timerRef.current) clearTimeout(timerRef.current);
+        timerRef.current = window.setTimeout(() => setCopied(false), 2000);
       })
       .catch(() => {});
   }, [copyText]);

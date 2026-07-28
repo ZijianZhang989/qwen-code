@@ -32,12 +32,16 @@ public class MyConcurrentUtils {
         } catch (InterruptedException e) {
             log.warn("task interrupted", e);
             future.cancel(true);
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Task interrupted", e);
         } catch (TimeoutException e) {
             log.warn("Operation timed out", e);
             future.cancel(true);
+            throw new RuntimeException("Operation timed out", e);
         } catch (Exception e) {
             future.cancel(true);
             log.warn("Operation error", e);
+            throw new RuntimeException("Operation failed", e);
         }
     }
 

@@ -18,10 +18,13 @@ export const useTheme = () => {
     if (savedTheme) {
       setTheme(savedTheme);
     } else {
-      const prefersDark = window.matchMedia(
-        '(prefers-color-scheme: dark)',
-      ).matches;
-      setTheme(prefersDark ? 'dark' : 'light');
+      const mql = window.matchMedia('(prefers-color-scheme: dark)');
+      setTheme(mql.matches ? 'dark' : 'light');
+      const handler = (e: MediaQueryListEvent) => {
+        setTheme(e.matches ? 'dark' : 'light');
+      };
+      mql.addEventListener('change', handler);
+      return () => mql.removeEventListener('change', handler);
     }
   }, []);
 
