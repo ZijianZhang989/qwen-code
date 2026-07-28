@@ -677,7 +677,14 @@ export function mountWorkspaceMemoryRememberRoutes(
     async (req, res) => {
       const body = deps.safeBody(req);
       const content = body['content'];
-      const trimmedContent = typeof content === 'string' ? content.trim() : '';
+      if (typeof content !== 'string') {
+        res.status(400).json({
+          error: '`content` must be a string',
+          code: 'invalid_content',
+        });
+        return;
+      }
+      const trimmedContent = content.trim();
       if (!trimmedContent) {
         res.status(400).json({
           error: '`content` must be a non-empty string',
@@ -762,7 +769,14 @@ export function mountWorkspaceMemoryRememberRoutes(
     async (req, res) => {
       const body = deps.safeBody(req);
       const query = body['query'];
-      const trimmedQuery = typeof query === 'string' ? query.trim() : '';
+      if (typeof query !== 'string') {
+        res.status(400).json({
+          error: '`query` must be a string',
+          code: 'invalid_query',
+        });
+        return;
+      }
+      const trimmedQuery = query.trim();
       if (!trimmedQuery) {
         res.status(400).json({
           error: '`query` must be a non-empty string',
