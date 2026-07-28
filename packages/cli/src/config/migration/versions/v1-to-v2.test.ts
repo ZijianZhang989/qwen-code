@@ -263,6 +263,26 @@ describe('V1ToV2Migration', () => {
 
       expect(result['$version']).toBe(2);
     });
+
+    it('should migrate folderTrustFeature to security.folderTrust.enabled', () => {
+      const v1Settings = {
+        folderTrustFeature: true,
+      };
+
+      const { settings: result } = migration.migrate(v1Settings, 'user') as {
+        settings: Record<string, unknown>;
+        warnings: unknown[];
+      };
+
+      expect(result['$version']).toBe(2);
+      expect(
+        (
+          (result['security'] as Record<string, unknown>)?.[
+            'folderTrust'
+          ] as Record<string, unknown>
+        )?.['enabled'],
+      ).toBe(true);
+    });
   });
 
   describe('version properties', () => {
