@@ -5,7 +5,7 @@
  */
 
 import type React from 'react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Box, Text } from 'ink';
 import Link from 'ink-link';
 import { theme } from '../semantic-colors.js';
@@ -55,12 +55,16 @@ export function QwenOAuthProgress({
     { isActive: true },
   );
 
+  // Store onTimeout in a ref to avoid restarting the interval on every re-render
+  const onTimeoutRef = useRef(onTimeout);
+  onTimeoutRef.current = onTimeout;
+
   // Countdown timer
   useEffect(() => {
     const timer = setInterval(() => {
       setTimeRemaining((prev) => {
         if (prev <= 1) {
-          onTimeout();
+          onTimeoutRef.current();
           return 0;
         }
         return prev - 1;
@@ -68,7 +72,7 @@ export function QwenOAuthProgress({
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [onTimeout]);
+  }, []);
 
   // Animated dots — cycle through fixed-width patterns to avoid layout shift
   useEffect(() => {
