@@ -24,13 +24,21 @@ export function MessageTimestamp({
   copyTitle = 'Copy',
 }: MessageTimestampProps) {
   const [copied, setCopied] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    },
+    [],
+  );
   const handleCopy = useCallback(() => {
     if (!copyText) return;
     void navigator.clipboard
       ?.writeText(copyText)
       .then(() => {
         setCopied(true);
-        window.setTimeout(() => setCopied(false), 2000);
+        if (timerRef.current) clearTimeout(timerRef.current);
+        timerRef.current = window.setTimeout(() => setCopied(false), 2000);
       })
       .catch(() => {});
   }, [copyText]);
