@@ -122,7 +122,7 @@ You can switch into Ask Permissions Mode during a session usingÂ **Shift+Tab**â€
 
 **Start a new session in Ask Permissions Mode**
 
-Ask Permissions Mode is the initial mode when you start Qwen Code. If you've changed modes and want to return to Ask Permissions Mode, use:
+Auto Mode is the initial mode when you start Qwen Code. If you've changed modes and want to return to Ask Permissions Mode, use:
 
 ```
 /approval-mode default
@@ -130,7 +130,7 @@ Ask Permissions Mode is the initial mode when you start Qwen Code. If you've cha
 
 **Run "headless" queries in Ask Permissions Mode**
 
-When running headless commands, Ask Permissions Mode is the default behavior. You can explicitly specify it with:
+Headless commands use the same default approval mode as interactive sessions (Auto Mode). You can explicitly specify it with:
 
 ```
 qwen --prompt "Analyze this code for potential bugs"
