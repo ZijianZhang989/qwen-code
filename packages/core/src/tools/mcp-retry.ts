@@ -66,11 +66,11 @@ export function isTransientNetworkError(error: unknown): boolean {
 
   const message = getErrorMessage(error);
 
-  if (message.includes('401') || message.includes('403')) return false;
-
   for (const transientCode of TRANSIENT_ERROR_CODES) {
     if (message.includes(transientCode)) return true;
   }
+
+  if (message.includes('401') || message.includes('403')) return false;
 
   if (TRANSIENT_HTTP_STATUS_PATTERNS.some((re) => re.test(message))) {
     return true;
