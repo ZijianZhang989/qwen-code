@@ -102,11 +102,18 @@ public class ProcessTransport implements Transport {
      */
     @Override
     public void close() throws IOException {
+        if (processErrorFuture != null) {
+            processErrorFuture.cancel(true);
+        }
         if (process != null) {
             process.getErrorStream().close();
             process.getOutputStream().close();
             process.getInputStream().close();
             process.destroy();
+            if (!process.waitFor(5, TimeUnit.SECONDS)) {
+                process.destroyForcibly();
+                process.waitFor(5, TimeUnit.SECONDS);
+            }
         }
         if (processInput != null) {
             processInput.close();
