@@ -346,7 +346,10 @@ export class RemoteInputWatcher {
         }
         // Small delay between commands to let the TUI process
         if (this.queue.length > 0) {
-          await new Promise((r) => setTimeout(r, 500));
+          await new Promise<void>((resolve) => {
+            const t = setTimeout(resolve, 500);
+            t.unref?.();
+          });
         }
       }
     } finally {
