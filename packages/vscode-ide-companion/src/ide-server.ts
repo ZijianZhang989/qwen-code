@@ -398,6 +398,15 @@ export class IDEServer {
   }
 
   async stop(): Promise<void> {
+    for (const transport of Object.values(this.transports)) {
+      try {
+        await transport.close();
+      } catch (err) {
+        this.log(`Error closing transport: ${(err as Error).message}`);
+      }
+    }
+    this.transports = {};
+
     if (this.server) {
       await new Promise<void>((resolve, reject) => {
         this.server!.close((err?: Error) => {
