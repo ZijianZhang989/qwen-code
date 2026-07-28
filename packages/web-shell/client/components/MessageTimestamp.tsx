@@ -1,4 +1,10 @@
-import { useCallback, useState, type ReactNode } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import styles from './MessageTimestamp.module.css';
 
 interface MessageTimestampProps {
