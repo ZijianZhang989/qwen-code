@@ -63,7 +63,6 @@ export class DiffManager {
   private readonly subscriptions: vscode.Disposable[] = [];
   // Dedupe: remember recent showDiff calls keyed by (file+content)
   private recentlyShown = new Map<string, number>();
-  private pendingDelayTimers = new Map<string, NodeJS.Timeout>();
   private static readonly DEDUPE_WINDOW_MS = 1500;
   // Optional hooks from extension to influence diff behavior
   // - shouldDelay: when true, we defer opening diffs briefly (e.g., while a permission drawer is open)
