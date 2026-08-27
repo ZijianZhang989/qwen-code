@@ -1,0 +1,384 @@
+{
+  "version": 1,
+  "repository": "/Users/zhangzijian/workspace/qwen-code",
+  "repositoryRef": "4c21f39ac02faf5323d353454414b09548c5cd7e",
+  "model": "qwen3.7-max",
+  "sessions": [
+    {
+      "id": "same-memory-reuse",
+      "description": "Read one memory body once, reuse it, switch away, and return.",
+      "turns": [
+        {
+          "id": "fork-metadata",
+          "prompt": "我平时向 Qwen Code 上游贡献代码时，主要使用哪个 GitHub fork？只说明仓库名。",
+          "memoryNeed": "metadata",
+          "expectedRefs": ["project:reference/user-github-fork-and-remote-setup.md"],
+          "criticalFacts": ["ZijianZhang989/qwen-code"]
+        },
+        {
+          "id": "fork-body",
+          "prompt": "把这条记忆中 SSH push 失败的现象、已确认的排查结果和建议绕过方案完整说明。",
+          "memoryNeed": "body",
+          "expectedRefs": ["project:reference/user-github-fork-and-remote-setup.md"],
+          "criticalFacts": ["fetch succeeds", "ssh authentication succeeds", "cause remains unknown", "web UI or gh pr create"]
+        },
+        {
+          "id": "fork-follow-up",
+          "prompt": "沿用刚才的信息，origin、fork 和 qqqys 分别是什么，不要重新查仓库。",
+          "memoryNeed": "history",
+          "expectedRefs": ["project:reference/user-github-fork-and-remote-setup.md"],
+          "criticalFacts": ["origin is QwenLM/qwen-code", "fork is ZijianZhang989/qwen-code", "qqqys is an additional remote"]
+        },
+        {
+          "id": "unrelated-control",
+          "prompt": "2 的 12 次方是多少？只回答数字。",
+          "memoryNeed": "none",
+          "expectedRefs": [],
+          "criticalFacts": ["4096"]
+        },
+        {
+          "id": "switch-rebase",
+          "prompt": "切到 rebase 记忆：多提交分支冲突很多时，推荐的处理顺序是什么？",
+          "memoryNeed": "metadata",
+          "expectedRefs": ["project:reference/git-rebase-drift-workflow.md"],
+          "criticalFacts": ["squash first", "rebase after squashing"]
+        },
+        {
+          "id": "rebase-danger",
+          "prompt": "这套流程里明确不能使用哪个 reset 命令，为什么？",
+          "memoryNeed": "body",
+          "expectedRefs": ["project:reference/git-rebase-drift-workflow.md"],
+          "criticalFacts": ["never use git reset --soft origin/main", "upstream-only changes can appear as deletions"]
+        },
+        {
+          "id": "return-fork",
+          "prompt": "回到最开始的 fork 话题：当时 SSH push 的根因最终确认了吗？",
+          "memoryNeed": "history",
+          "expectedRefs": ["project:reference/user-github-fork-and-remote-setup.md"],
+          "criticalFacts": ["cause remains unknown"]
+        },
+        {
+          "id": "session-summary",
+          "prompt": "用三条总结这次对话里确认的 fork、rebase 和 push 结论。",
+          "memoryNeed": "history",
+          "expectedRefs": [],
+          "criticalFacts": ["ZijianZhang989/qwen-code", "squash before rebase", "SSH push cause unknown"]
+        }
+      ]
+    },
+    {
+      "id": "architecture-topic-switch",
+      "description": "Switch among repository architecture memories and verify against the real checkout.",
+      "turns": [
+        {
+          "id": "send-message-overview",
+          "prompt": "sendMessageStream 在 Qwen Code 里是外层调度器还是 ReAct 循环本身？先给结论和主要阶段。",
+          "memoryNeed": "metadata",
+          "expectedRefs": ["project:project/sendmessagstream-investigation.md"],
+          "criticalFacts": ["outer scheduler", "Turn.run contains the ReAct loop"]
+        },
+        {
+          "id": "send-message-repo-check",
+          "prompt": "结合当前真实仓库代码核对刚才的判断，给出关键调用链，不要只复述记忆。",
+          "memoryNeed": "repository",
+          "expectedRefs": ["project:project/sendmessagstream-investigation.md"],
+          "criticalFacts": ["repository evidence", "Turn.run"]
+        },
+        {
+          "id": "switch-compaction",
+          "prompt": "切换到 compaction pipeline：自动压缩从哪里触发，压缩结果怎样回到历史？",
+          "memoryNeed": "body",
+          "expectedRefs": ["project:project/compaction-pipeline.md"],
+          "criticalFacts": ["trigger", "history"]
+        },
+        {
+          "id": "compaction-follow-up",
+          "prompt": "它和刚才 sendMessageStream 的关系是什么？基于前两轮上下文回答。",
+          "memoryNeed": "history",
+          "expectedRefs": [],
+          "criticalFacts": ["sendMessageStream", "compaction"]
+        },
+        {
+          "id": "switch-webshell",
+          "prompt": "再切换到 Web Shell daemon：一个 workspace 和 ACP 子进程是什么关系？多个 session 怎么复用？",
+          "memoryNeed": "metadata",
+          "expectedRefs": ["project:project/webshell-daemon-session-architecture.md"],
+          "criticalFacts": ["one workspace", "one qwen --acp process", "sessions multiplex"]
+        },
+        {
+          "id": "webshell-body",
+          "prompt": "继续说明 transcript、resume/load 和跨 session 同文件写入的并发边界。",
+          "memoryNeed": "body",
+          "expectedRefs": ["project:project/webshell-daemon-session-architecture.md"],
+          "criticalFacts": ["ChatRecordingService", "PathMutexRegistry", "last-writer-wins"]
+        },
+        {
+          "id": "architecture-control",
+          "prompt": "TypeScript 中 Promise.all 的返回顺序由完成时间决定吗？只回答结论和一句原因。",
+          "memoryNeed": "none",
+          "expectedRefs": [],
+          "criticalFacts": ["input order"]
+        },
+        {
+          "id": "architecture-summary",
+          "prompt": "把三个架构主题串成一张文字调用链，并明确哪些是记忆结论、哪些经过仓库核验。",
+          "memoryNeed": "history",
+          "expectedRefs": [],
+          "criticalFacts": ["sendMessageStream", "compaction", "Web Shell"]
+        }
+      ]
+    },
+    {
+      "id": "user-preference-continuity",
+      "description": "Check persistent user preferences without over-recalling on control turns.",
+      "turns": [
+        {
+          "id": "learning-style",
+          "prompt": "我学习 JS/TS 时偏好什么讲解方式？",
+          "memoryNeed": "metadata",
+          "expectedRefs": ["project:user/learns-js-ts-through-reading-real-code.md"],
+          "criticalFacts": ["real code", "layered explanation"]
+        },
+        {
+          "id": "line-by-line-style",
+          "prompt": "那逐行讲代码时，你应该重点解释哪些内容？",
+          "memoryNeed": "body",
+          "expectedRefs": ["project:user/prefers-line-by-line-code-explanations.md"],
+          "criticalFacts": ["control flow", "branches", "execution path"]
+        },
+        {
+          "id": "real-code-task",
+          "prompt": "从当前仓库找一个不超过 25 行的 TypeScript 函数，按刚才的偏好解释它；不要修改代码。",
+          "memoryNeed": "repository",
+          "expectedRefs": [],
+          "criticalFacts": ["real repository function", "line-by-line explanation"]
+        },
+        {
+          "id": "style-follow-up",
+          "prompt": "再用一个生活类比解释这个函数的控制流，但不要重复逐行内容。",
+          "memoryNeed": "history",
+          "expectedRefs": ["project:feedback/prefers-analogies-and-examples.md"],
+          "criticalFacts": ["analogy", "same function"]
+        },
+        {
+          "id": "language-preference",
+          "prompt": "后续输出默认使用什么语言？只回答语言名称。",
+          "memoryNeed": "metadata",
+          "expectedRefs": ["project:user/output-language-chinese.md"],
+          "criticalFacts": ["中文"]
+        },
+        {
+          "id": "preference-control",
+          "prompt": "把数组 [3, 1, 2] 升序排列，只输出 JSON 数组。",
+          "memoryNeed": "none",
+          "expectedRefs": [],
+          "criticalFacts": ["[1,2,3]"]
+        },
+        {
+          "id": "return-code",
+          "prompt": "回到第 3 轮那个函数，指出最容易误解的一行以及原因。",
+          "memoryNeed": "history",
+          "expectedRefs": [],
+          "criticalFacts": ["same function", "specific line"]
+        },
+        {
+          "id": "preference-summary",
+          "prompt": "总结本次对话中你实际采用了哪些讲解偏好，不要泛泛罗列所有记忆。",
+          "memoryNeed": "history",
+          "expectedRefs": [],
+          "criticalFacts": ["real code", "control flow", "analogy", "Chinese"]
+        }
+      ]
+    },
+    {
+      "id": "metadata-to-body",
+      "description": "Escalate from metadata to body for closely related resolve-issue memories.",
+      "turns": [
+        {
+          "id": "resolve-overview",
+          "prompt": "resolve-issue skill 的整体流程是什么？只给阶段级总览。",
+          "memoryNeed": "metadata",
+          "expectedRefs": ["project:project/resolve-issue-skill.md"],
+          "criticalFacts": ["classification", "investigation", "implementation", "PR"]
+        },
+        {
+          "id": "resolve-routing",
+          "prompt": "现在展开说明 routes.json 如何根据 status 选择 stage 文件。",
+          "memoryNeed": "body",
+          "expectedRefs": ["project:project/resolve-issue-skill-split-investigation.md"],
+          "criticalFacts": ["status", "routes.json", "stage file"]
+        },
+        {
+          "id": "resolve-subagents",
+          "prompt": "在这套流程中，哪些工作交给 subagent，判断依据是什么？",
+          "memoryNeed": "history",
+          "expectedRefs": ["project:project/resolve-issue-subagent-assignment-strategy.md"],
+          "criticalFacts": ["user interaction", "preceding conversation context"]
+        },
+        {
+          "id": "resolve-worktree",
+          "prompt": "worktree 中的代码操作和主目录中的状态文件分别放在哪里？",
+          "memoryNeed": "body",
+          "expectedRefs": ["project:project/resolve-issue-worktree-operation-pattern.md"],
+          "criticalFacts": ["absolute worktree paths", ".qwen/issues"]
+        },
+        {
+          "id": "resolve-negative-nearby",
+          "prompt": "只根据当前仓库判断：这个 skill 现在是否真的存在，入口文件在哪里？",
+          "memoryNeed": "repository",
+          "expectedRefs": [],
+          "criticalFacts": ["repository evidence"]
+        },
+        {
+          "id": "resolve-control",
+          "prompt": "Git 中 detached HEAD 是否等于没有任何 commit？只回答是或否并解释一句。",
+          "memoryNeed": "none",
+          "expectedRefs": [],
+          "criticalFacts": ["否"]
+        },
+        {
+          "id": "resolve-return",
+          "prompt": "回到 routing：如果 status 是 reviewing，下一步应该读取哪个阶段？基于前文回答。",
+          "memoryNeed": "history",
+          "expectedRefs": [],
+          "criticalFacts": ["review stage"]
+        },
+        {
+          "id": "resolve-summary",
+          "prompt": "总结这套 skill 的流程、路由、subagent 和 worktree 四个维度，并标出仓库未能确认的内容。",
+          "memoryNeed": "history",
+          "expectedRefs": [],
+          "criticalFacts": ["flow", "routing", "subagent", "worktree"]
+        }
+      ]
+    },
+    {
+      "id": "stale-and-current-state",
+      "description": "Require repository verification instead of trusting potentially stale memory.",
+      "turns": [
+        {
+          "id": "settings-memory",
+          "prompt": "记忆中为什么修改 settingsSchema.ts 后需要 clean build？",
+          "memoryNeed": "body",
+          "expectedRefs": ["project:feedback/settings-schema-needs-clean-build.md"],
+          "criticalFacts": ["incremental build", "tsbuildinfo"]
+        },
+        {
+          "id": "settings-current",
+          "prompt": "不要直接相信旧结论，检查当前真实仓库的构建脚本和 TypeScript 配置，判断这条规则现在是否仍适用。",
+          "memoryNeed": "current_state",
+          "expectedRefs": ["project:feedback/settings-schema-needs-clean-build.md"],
+          "criticalFacts": ["repository evidence", "current applicability"]
+        },
+        {
+          "id": "sessions-memory",
+          "prompt": "记忆中的 sessions list 功能准备提供什么能力？",
+          "memoryNeed": "metadata",
+          "expectedRefs": ["project:project/feature-sessions-list-cli.md"],
+          "criticalFacts": ["sessions list"]
+        },
+        {
+          "id": "sessions-current",
+          "prompt": "检查当前仓库，确认该功能现在实现到了什么程度；找不到证据就明确说无法确认。",
+          "memoryNeed": "current_state",
+          "expectedRefs": ["project:project/feature-sessions-list-cli.md"],
+          "criticalFacts": ["repository evidence", "no unsupported claim"]
+        },
+        {
+          "id": "timestamp-nearby",
+          "prompt": "show timestamps 和 terminal title 是两项不同功能吗？分别概括，不要混在一起。",
+          "memoryNeed": "metadata",
+          "expectedRefs": ["project:project/feature-show-timestamps.md", "project:project/feature-terminal-title-session-name.md"],
+          "criticalFacts": ["two distinct features"]
+        },
+        {
+          "id": "stale-control",
+          "prompt": "当前仓库根目录 package.json 的 name 是什么？读取文件后回答。",
+          "memoryNeed": "repository",
+          "expectedRefs": [],
+          "criticalFacts": ["package.json evidence"]
+        },
+        {
+          "id": "return-settings",
+          "prompt": "回到 clean build：用一句话区分历史记忆和当前仓库事实。",
+          "memoryNeed": "history",
+          "expectedRefs": [],
+          "criticalFacts": ["historical memory", "current repository"]
+        },
+        {
+          "id": "stale-summary",
+          "prompt": "列出本次对话中哪些结论经过仓库核验、哪些只是历史记忆，并避免把计划当成已实现。",
+          "memoryNeed": "history",
+          "expectedRefs": [],
+          "criticalFacts": ["verified", "historical", "plan is not implementation"]
+        }
+      ]
+    },
+    {
+      "id": "compression-and-refresh",
+      "description": "Verify read-state reuse, memory mtime refresh, compression, and post-compression reread.",
+      "turns": [
+        {
+          "id": "refresh-initial",
+          "prompt": "读取 fork 记忆正文，告诉我 SSH push 问题的根因是否已经确认。",
+          "memoryNeed": "body",
+          "expectedRefs": ["project:reference/user-github-fork-and-remote-setup.md"],
+          "criticalFacts": ["cause remains unknown"]
+        },
+        {
+          "id": "refresh-reuse",
+          "prompt": "同一条记忆里，HTTPS push 是否成功？直接基于刚才读取的内容回答。",
+          "memoryNeed": "history",
+          "expectedRefs": ["project:reference/user-github-fork-and-remote-setup.md"],
+          "criticalFacts": ["HTTPS also fails"]
+        },
+        {
+          "id": "refresh-filler-one",
+          "prompt": "检查当前仓库并详细解释 sendMessageStream 和 Turn.run 的职责边界，至少列出六个阶段。",
+          "memoryNeed": "repository",
+          "expectedRefs": ["project:project/sendmessagstream-investigation.md"],
+          "criticalFacts": ["outer scheduler", "Turn.run"]
+        },
+        {
+          "id": "refresh-filler-two",
+          "prompt": "继续详细解释 compaction pipeline，指出触发、输入、输出和历史替换过程。",
+          "memoryNeed": "body",
+          "expectedRefs": ["project:project/compaction-pipeline.md"],
+          "criticalFacts": ["trigger", "input", "output", "history"]
+        },
+        {
+          "id": "refresh-control",
+          "prompt": "1000 毫秒等于多少秒？只回答数字和单位。",
+          "memoryNeed": "none",
+          "expectedRefs": [],
+          "criticalFacts": ["1 秒"]
+        },
+        {
+          "id": "refresh-mtime",
+          "mutation": {
+            "ref": "reference/user-github-fork-and-remote-setup.md",
+            "append": "迁移验证标记：multiturn-refresh-20260827"
+          },
+          "prompt": "fork 记忆文件刚刚发生了变化，读取并告诉我新增的迁移验证标记。",
+          "memoryNeed": "body",
+          "expectedRefs": ["project:reference/user-github-fork-and-remote-setup.md"],
+          "criticalFacts": ["multiturn-refresh-20260827"]
+        },
+        {
+          "id": "refresh-compress",
+          "prompt": "/compress",
+          "memoryNeed": "none",
+          "expectedRefs": [],
+          "criticalFacts": ["context compressed"]
+        },
+        {
+          "id": "refresh-post-compress",
+          "prompt": "压缩后再次确认：fork 记忆中的迁移验证标记是什么，SSH push 根因确认了吗？",
+          "memoryNeed": "body",
+          "expectedRefs": ["project:reference/user-github-fork-and-remote-setup.md"],
+          "criticalFacts": ["multiturn-refresh-20260827", "cause remains unknown"]
+        }
+      ]
+    }
+  ]
+}
