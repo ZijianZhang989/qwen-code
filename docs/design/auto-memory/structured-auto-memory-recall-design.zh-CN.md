@@ -1,259 +1,327 @@
 # Auto Memory 结构化召回设计
 
-## 核心思路
+## 目标
 
-这次设计的目标不是简单增加一个检索工具，而是把 Auto Memory 从“平铺索引 + 选中后注入正文”改成“完整记忆地图 + 本轮聚焦子树 + 按需读取正文 + 无损迁移”。
+Auto Memory 原有链路把 `MEMORY.md` 平铺索引加入主模型上下文，再由
+selector 或启发式规则选择记忆正文。随着记忆增长，这种组织方式会让默认
+上下文持续变大，并让模型难以理解记忆之间的主题关系。
 
-模型先看到有哪些记忆、它们属于什么主题、适合什么场景；只有 metadata 不足以完成任务时，才读取记忆正文。
-
-```mermaid
-flowchart TD
-  A["已有记忆文件"] --> B["结构化 metadata"]
-  B --> C["Complete Memory Tree<br/>完整记忆树"]
-  C --> D["Focused Subtree<br/>本轮相关子树"]
-  D --> E["主模型上下文"]
-  E --> F{"metadata 是否足够？"}
-  F -- "足够" --> G["直接完成任务"]
-  F -- "不足" --> H["search_memory.search / fetch"]
-  H --> I["按需读取正文窗口"]
-  I --> G
-```
-
-## 树结构
-
-完整记忆树是全局地图，主要展示 category、ref 和 title，让模型知道所有可见记忆如何组织。
+结构化召回把这条链路调整为：
 
 ```text
-Complete memory tree
+Complete Memory Tree + Focused Subtree + on-demand body
+```
+
+完整树提供全局地图，本轮子树提供查询焦点，`search_memory` 只在 metadata
+不足时读取正文。已有未打标记忆继续走 Legacy 链路，并由后台迁移逐步补齐
+metadata，全部可见语料就绪后再切换协议。
+
+本设计的目标是：
+
+- 保留现有记忆文件和正文，不要求用户手动迁移。
+- 用层次树代替主模型中的平铺索引。
+- 降低默认上下文和重复正文带来的 Token 消耗。
+- 同时保留确定性快速召回和模型语义选择能力。
+- 让正文读取、压缩清除和文件更新具有一致的状态语义。
+
+## 存储与 Scope
+
+结构化召回不改变记忆文件的跨平台路径计算方式。Windows、Linux 和 macOS
+使用相同的逻辑结构，但基础目录遵循各平台和运行时的路径解析结果。
+
+| Scope   | 默认位置                                       | 语义                                      |
+| ------- | ---------------------------------------------- | ----------------------------------------- |
+| Project | `<memory-base>/projects/<project-key>/memory/` | 当前 Git root 或 workspace 的私有项目记忆 |
+| User    | `<memory-base>/memories/`                      | 跨项目共享的用户偏好和背景                |
+| Team    | `<git-root>/.qwen/team-memory/`                | Git 跟踪的团队共享记忆                    |
+
+`QWEN_CODE_MEMORY_BASE_DIR` 可以覆盖基础目录。仅 Project Memory 响应
+`QWEN_CODE_MEMORY_LOCAL=1`，此时它位于 `<project>/.qwen/memory/`；User
+Memory 仍位于全局 memory base 下，不会变成项目内的 `user/` 子目录。
+
+Project root 内的 `user/*.md` 仍属于 Project scope。目录名只用于组织，scope
+由扫描使用的 root 决定。
+
+每条主题记忆使用 YAML frontmatter 和 Markdown 正文：
+
+```yaml
+---
+name: model-pull-memory-design
+description: Qwen Code Auto Memory uses structured metadata and on-demand body retrieval.
+type: project
+category: tool_experience
+keywords:
+  - structured memory recall
+  - focused subtree
+  - search_memory
+usage_scenarios:
+  - Designing Auto Memory recall behavior
+  - Evaluating recall quality and token cost
+---
+```
+
+`name`、`description`、`category`、`keywords` 和 `usage_scenarios` 都来自完整
+正文，并在正文语义变化时同步更新。`keywords` 可以包含普通词、短语、API、
+工具名、issue id 或项目特定 identifier。
+
+## 两种召回协议
+
+### Legacy
+
+只要任一当前可见 scope 中还存在缺失或无效结构化 metadata 的记忆，会话就
+使用 Legacy 协议：
+
+```text
+MEMORY.md -> selector / heuristic -> selected body snippets
+```
+
+Legacy 保留原有 surfaced-path 去重和 active-tool 噪声过滤。后台迁移不会切断
+这条链路，因此旧记忆在迁移期间仍然可召回。
+
+### Structured
+
+当所有可见记忆均通过 metadata 校验后，系统准备新的索引和 system prompt，
+再次确认 corpus revision 未变化，然后原子提交 `legacy -> structured` 切换。
+准备或确认失败时保持 Legacy，不交付一半的新协议。
+
+Structured 协议由三个部分组成：
+
+```mermaid
+flowchart LR
+  A["Complete Memory Tree"] --> D["主模型上下文"]
+  B["User Query"] --> C["Fast + Selector"]
+  C --> E["Focused Subtree"]
+  E --> D
+  D --> F["search_memory"]
+  F --> G["正文窗口"]
+  G --> D
+```
+
+当前实现只在会话内执行 `legacy -> structured`。Structured 会话不会因为一次
+外部文件变化立即自动回退；正常的 Extraction、Remember、Dream 和 Migration
+写入必须始终生成有效 metadata，新会话启动时会重新判断 corpus readiness。
+
+## Complete Memory Tree
+
+Complete Tree 是当前 snapshot 的全局 metadata 地图，只包含 category、无损
+`ref` 和 title，不包含正文或平铺 `MEMORY.md` 内容：
+
+```text
+## Complete memory tree
 
 tool_experience
 ├── [project:reference/cua-driver-rs.md] cua-driver-rs-reference
-├── [project:project/model-pull-memory.md] model-pull-memory-design
-└── [user:feedback/code-review-style.md] code-review-style
+└── [project:project/model-pull-memory.md] model-pull-memory-design
 
 project_context
-├── [project:project/qwen-code-eval.md] qwen-code-eval-context
 └── [team:reference/release-process.md] release-process
 ```
 
-每轮用户请求只注入 focused subtree。它是完整树中的查询相关部分，不是一棵新的独立树。
+它在 Structured 协议首次交付时进入上下文。之后只有 corpus revision 变化时才
+交付新版本，并明确替换旧版本；不会在每轮 UserQuery 重复注入相同完整树。
+TUI 和 ACP 都在请求真正发送后提交 delivered revision，发送失败或取消不会
+错误推进交付状态。
+
+`ref` 是协议身份，不是展示字符串。它使用 scope 和无损相对路径编码，展示
+规范化不会改变 ref；扫描阶段会检测身份冲突，保证每个文件都能唯一 fetch。
+
+## Focused Subtree
+
+Focused Subtree 是 Complete Tree 中与当前请求相关的路径，不是一棵新全局树：
 
 ```text
-Memory focus for this turn
+## Memory focus for this turn
 
-The paths below are the query-relevant subtree for this turn.
-They add focus to the existing memory tree; they do not replace it.
-
+The paths below are the query-relevant subtree for this turn. They add focus
+to the existing memory tree; they do not replace it.
 └── tool_experience
-    关键词：qwen code memory, selector, search_memory, metadata recall
+    关键词：structured memory recall, selector latency, search_memory
     ├── [project:project/model-pull-memory.md] model-pull-memory-design
     │   摘要：...
     │   适用：...
     └── [内容已在当前上下文] [project:reference/cua-driver-rs.md] cua-driver-rs-reference
 ```
 
-如果某条记忆正文已经在当前上下文中，focused subtree 只保留占位符，避免重复注入正文。
+同一 category 的关键词在父节点聚合，避免每个 leaf 重复展示相同关键词。leaf
+保留 ref、title、description 和 usage scenarios。Focused prompt 有固定字符
+预算，超出时按召回顺序减少 leaf，并明确标记省略数量。
 
-## 上下文组织
+正文是否显示为“已在当前上下文”由内存中的 `bodyPresentVersions` 决定：
 
-旧链路更接近下面这种结构：
+- 未读取：显示 metadata，模型可按需 search 或 fetch。
+- 正文仍在历史中且 mtime 一致：leaf 显示正文已存在的占位符。
+- 正文已被压缩清除：移除驻留状态，再次显示可读取 metadata。
+- 文件 mtime 变化：旧正文视为 stale，允许读取新版本。
 
-```mermaid
-flowchart LR
-  A["MEMORY.md 平铺索引"] --> B["selector / heuristic"]
-  B --> C["选中记忆"]
-  C --> D["注入正文片段"]
-  D --> E["主模型上下文"]
-```
+占位只替代 leaf 的正文提示，不删除 category 的聚合关键词，也不删除 ref 和
+title。
 
-新链路把记忆正文从默认上下文中移出去，只留下地图和本轮聚焦路径：
+## Fast Recall 与 Selector
 
-```mermaid
-flowchart LR
-  A["Complete Tree"] --> B["全局记忆地图"]
-  C["User Query"] --> D["fast metadata scorer"]
-  C --> E["async selector"]
-  D --> F["Focused Subtree"]
-  E --> F
-  F --> G["主模型上下文"]
-  G --> H["search_memory 按需读取正文"]
-```
+Fast scorer 和 selector 读取同一个 snapshot，并行承担不同职责：
 
-目标上下文从：
+1. Fast scorer 是确定性入口，最多选择两条候选，优先精确 title、identifier、
+   完整 keyword phrase 和多 metadata term 覆盖。
+2. Selector 接收有界 metadata manifest，执行语义选择和精排。
+3. Fast 结果先到时可在首个可用交付点形成 Focused Subtree。
+4. Selector 的 refined 结果在后续安全注入点交付，并与 fast 结果按 ref 合并，
+   不缩小 Complete Tree snapshot。
 
-```text
-MEMORY.md + selected body + selected body + selected body
-```
+短 Latin keyword 使用 token boundary，避免 `ai` 命中 `explain`。Han、Hiragana、
+Katakana 和 Hangul 使用一致的 CJK tokenizer。正文只作为低权重 fallback，不能
+让普通正文词压过明确 metadata 命中。
 
-变成：
+Selector 是异步 side query，不阻塞确定性 fast 入口。若 selector abort、超时或
+返回无效结果，fast/fallback 仍可继续主请求。当前 manifest 保持 25,000 bytes
+上限；这是上下文预算，不代表所有大语料候选都必然进入 selector。
 
-```text
-Complete Tree + Focused Subtree + on-demand body
-```
+## `search_memory`
 
-## 召回方法
+Structured 主模型只通过 `search_memory` 按需获取 managed-memory 正文：
 
-召回分为三层。
+- `search`：不知道准确 ref 时，使用 1 至 5 个关键词，可选 scopes、categories
+  和结果数量。
+- `fetch`：已经知道 ref 时直接读取；ref 必须从树或搜索结果原样复制。
+- `cursor`：只用于相邻正文窗口 continuation，不属于新的 search 请求。
 
-第一层是 fast metadata recall。它在很小的延迟预算内完成，用于首轮给模型一个可靠入口。它主要匹配 title、keywords、description、usage_scenarios，并且只把 body 作为低权重 fallback。
+搜索支持 Unicode letters/numbers 以及 Han、Hiragana、Katakana、Hangul。多个
+scope 在扫描前稳定去重，排序综合 metadata 覆盖率、短语/identifier 命中、
+语料稀有度和未覆盖关键词。
 
-```mermaid
-flowchart TD
-  A["User Query"] --> B["Normalize / Tokenize"]
-  B --> C["匹配 title"]
-  B --> D["匹配 keywords / phrases"]
-  B --> E["匹配 description"]
-  B --> F["匹配 usage_scenarios"]
-  C --> G["综合打分"]
-  D --> G
-  E --> G
-  F --> G
-  G --> H["Top focused entries"]
-```
+Search 和 fetch 都有结果数、窗口和总正文预算。预算由 `search_memory` 自己
+执行，工具调度器不再二次截断其 JSON。一个窗口被文件可读范围截断不等于
+整个 ref 已耗尽；只有本轮累计 per-ref 正文预算实际用完才标记 exhausted。
 
-关键词 metadata 是确定性召回的核心，不是装饰标签。关键词可以是普通词，也可以是短语、API 名称、工具名、issue id、模型名或项目特定 identifier。
+每个新 UserQuery 重置本轮 duplicate claim 和 exhausted refs，ToolResult
+continuation 不重置。文件在 snapshot 后消失时返回 `missingRefs` 和 warning，
+不静默假装 fetch 完成。
 
-```yaml
-keywords:
-  - qwen code memory recall
-  - selector latency
-  - search_memory
-  - focused subtree
-  - qwen3.7-max
-```
+## 正文驻留与压缩
 
-第二层是 async selector。selector 保留为语义精排层，继续异步运行。它不再承担首轮是否能看到记忆入口的唯一责任，而是在后续安全注入点交付 refined focused subtree。
-
-第三层是 `search_memory`。当 focused subtree 中的 metadata 不足时，模型可以主动搜索或读取正文。
-
-```mermaid
-flowchart TD
-  A["Focused Subtree"] --> B{"metadata 是否足够？"}
-  B -- "足够" --> C["直接使用"]
-  B -- "不知道哪条相关" --> D["search_memory.search"]
-  B -- "知道 ref 但缺正文" --> E["search_memory.fetch"]
-  D --> F["正文窗口 + matches"]
-  E --> F
-  F --> C
-```
-
-## Metadata 写入
-
-metadata 来自三个入口：自动 extraction、用户显式 remember、后台 dream/migration。
-
-```mermaid
-flowchart TD
-  A["对话中产生 durable 信息"] --> B["Extraction"]
-  C["用户显式 remember"] --> D["Remember Agent"]
-  E["已有记忆整理"] --> F["Dream / User Dream / Migration"]
-  B --> G["带 metadata 的 memory file"]
-  D --> G
-  F --> G
-```
-
-每条记忆应保留完整正文，同时补齐用于召回的 metadata。
-
-```yaml
----
-name: model-pull-memory-design
-description: Qwen Code Auto Memory should use structured metadata, focused subtree recall, and search_memory for on-demand body retrieval.
-type: project
-category: tool_experience
-keywords:
-  - qwen code memory recall
-  - focused subtree
-  - search_memory
-  - selector latency
-usage_scenarios:
-  - Designing Auto Memory recall behavior
-  - Evaluating selector and fast recall tradeoffs
----
-正文内容...
-```
-
-`description` 说明这条记忆是什么，`keywords` 提供召回键，`usage_scenarios` 描述未来什么任务会用到它，`category` 决定它在主题树中的位置。
-
-## 无损迁移
-
-已有用户记忆不能被一次性切断或破坏，因此迁移采用双链路共存。
-
-```mermaid
-flowchart TD
-  A["启动/记忆扫描"] --> B{"所有可见记忆是否都有完整 metadata？"}
-  B -- "否" --> C["Legacy Recall Mode"]
-  C --> D["旧 MEMORY.md + 原召回链路继续工作"]
-  C --> E["后台迁移 agent 增量补 metadata"]
-  E --> A
-  B -- "是" --> F["Structured Recall Mode"]
-  F --> G["Complete Tree + Focused Subtree + search_memory"]
-```
-
-迁移原则：
-
-- 不破坏旧正文。
-- 不让旧记忆失效。
-- 未迁移时继续走旧链路。
-- 迁移完成后自动切换到结构化链路。
-- 如果后续又出现未打标文件，允许回退 legacy 或重新进入迁移。
-
-## Project Memory 和 User Memory
-
-project memory 和 user memory 需要分别整理。
-
-```mermaid
-flowchart LR
-  A["Project Memory"] --> B["Project Dream"]
-  C["User Memory"] --> D["User Dream"]
-  B --> E["项目内记忆去重、拆分、补 metadata"]
-  D --> F["跨项目用户偏好、背景、个人 reference 整理"]
-```
-
-project dream 适合结合项目上下文和 transcript 整理项目记忆。user dream 应只整理跨项目用户记忆，不读取项目文件或项目 transcript。这样可以避免用户级记忆随着项目数量和会话数量持续增长。
-
-## 正文可见性
-
-新链路需要区分“曾经读过”和“当前上下文仍然可见”。
+系统区分“这个 session 曾经读过”与“正文现在仍存在于模型历史”：
 
 ```mermaid
 stateDiagram-v2
   [*] --> Unread
-  Unread --> PresentInHistory: fetch body
-  PresentInHistory --> AlreadyAvailable: fetch same ref
-  PresentInHistory --> Evicted: compression removes body
-  Evicted --> PresentInHistory: fetch again
-  PresentInHistory --> Stale: memory file mtime changes
-  Stale --> PresentInHistory: fetch new version
+  Unread --> Present: fetch_or_search
+  Present --> AlreadyAvailable: fetch_same_version
+  Present --> Evicted: compression
+  Evicted --> Present: fetch_again
+  Present --> Stale: mtime_changed
+  Stale --> Present: fetch_new_version
 ```
 
-目标行为：
+`search_memory` 正文结果进入历史后记录 ref 和 mtime。重复 fetch 同一版本返回
+`alreadyAvailable`，不重复正文。Microcompaction 或 memory-pressure compaction
+清除工具结果时，先把被清除 ref 反馈给 MemoryManager，再渲染下一份 Focused
+Subtree，因此不会出现“占位符说正文还在，但历史已经删除”的状态。
 
-- 正文仍在上下文时，重复 fetch 返回 alreadyAvailable。
-- 正文被压缩移除后，允许重新 fetch。
-- 记忆文件发生变化后，允许读取新版本。
+ToolResult 路径先执行 size-only microcompaction，再消费 recall snapshot。这个
+顺序同时适用于正常主循环和 ACP 会话。
 
-## 预期收益
+## Managed-memory 访问边界
 
-```mermaid
-flowchart TD
-  A["结构化 metadata"] --> B["更稳定的 fast recall"]
-  A --> C["更清晰的完整记忆地图"]
-  B --> D["更少依赖 selector 首轮完成"]
-  C --> E["更少平铺正文注入"]
-  D --> F["召回稳定性提升"]
-  E --> G["Token 成本下降"]
-  H["search_memory 按需读取"] --> I["正文只在必要时进入上下文"]
-  I --> G
-  I --> J["任务质量提升"]
-```
+通用文件工具不能绕过 Structured 协议直接读取正文：
 
-理论收益主要有三类：
+| 调用者              | Read            | Glob            | Grep            | LS/Folder       | Shell                   |
+| ------------------- | --------------- | --------------- | --------------- | --------------- | ----------------------- |
+| Legacy 主模型       | 保持原行为      | 保持原行为      | 保持原行为      | 保持原行为      | 保持原行为              |
+| Structured 主模型   | 拒绝            | 隐藏            | 排除            | 隐藏            | 拒绝 managed roots      |
+| Memory scoped Agent | capability 控制 | capability 控制 | capability 控制 | capability 控制 | capability 与 allowlist |
+| Generic Subagent    | 不自动授权      | 不自动授权      | 不自动授权      | 不自动授权      | 不自动授权              |
 
-1. 降低 token：metadata 足够时不读正文，已读正文不重复注入。
-2. 提高召回准确度：关键词、短语和 identifier 比全文偶然词命中更稳定。
-3. 提高任务质量：模型先看到记忆地图，再按需读取正文，更接近真实知识库使用方式。
+Dream、User Dream、Extraction 和 Remember 使用 scoped config，显式获得需要的
+direct-read/direct-write 能力。普通 forked subagent 不因为 Structured 模式而
+自动获得记忆访问权限。
 
-最终收益需要通过真实 API usage、真实任务 A/B 和 LLM-as-judge 评测确认，不能只用字符数估算。
+Shell gate 同时检查命令参数和 resolved cwd，避免先把 cwd 设为 memory root，
+再用裸文件名读写。Project、User、Team roots 使用同一 containment 语义。
+
+## Metadata 写入和后台任务
+
+四条写入路径都必须维持结构化 metadata：
+
+- Extraction：从新增对话中提取 durable 信息。
+- Remember：处理用户显式记忆请求。
+- Dream / User Dream：整理、去重、拆分已有记忆。
+- Migration：只为 Legacy 文件补齐 metadata，不承担日常 Dream 职责。
+
+Migration 每个 batch 最多尝试 10 个文件、最多读取 40,000 字符正文。每个完成
+的 UserQuery 最多触发一批 Project 和 User migration；同一 scope/root 已有任务
+运行时返回 `running`，不排队自动接力。Headless 单轮退出时不会隐式 self-drain
+后续批次，以免改变退出延迟和后台模型成本。用户可以通过现有 task surface
+查看和取消 migration。
+
+Project Dream 和 User Dream 对同一 root 使用 PID/mtime lock，多个 session 不会
+并发整理同一语料。拿不到锁的 session 返回 `locked`，不会自动排队接力。
+Dream 继续按既有 mutation、时间和文档数量门控触发，不负责迁移全部旧文件。
+
+`pinned/` 是用户保护区。维护 Agent 的工具配置禁止修改 pinned 文件，Dream
+manifest executor 也拒绝 delete、dedupe 和 split 指向 pinned 路径。每次 Dream
+持锁启动 planner 前先删除遗留 manifest，避免异常退出留下的旧操作被下一次
+运行执行。
+
+## 迁移安全与一致性
+
+迁移遵循以下约束：
+
+- 保留文件正文，只更新 frontmatter。
+- 读取前拒绝 symlink memory root 和 root boundary escape。
+- 叶子提交使用 no-follow 和 source hash/CAS，文件并发变化时不覆盖新版本。
+- 单文件并发消失可以跳过并保留已提交进度。
+- 权限错误和 root 安全错误使对应 scope 明确失败，不能静默标记 ready。
+- 不存在的兼容 root 是 no-op，不为它创建目录，也不阻塞协议切换。
+- 每提交一条 metadata，后续生成即可使用最新 canonical vocabulary。
+
+只有所有请求 scope 都完成校验，readiness 才为 true。索引重建、revision 二次
+确认和 prompt 构建全部成功后才提交 Structured 协议。
+
+## 可观测性
+
+Telemetry 分别记录：
+
+- recall scan、fast、selector 和 delivery timing；
+- Complete Tree 是否交付及 discard 原因；
+- search/fetch 返回数量、正文字符数和 source status；
+- migration 扫描、legacy、提交、冲突、失败、Token 与耗时；
+- recall mode transition。
+
+日志不记录查询正文、记忆正文或物理文件路径。Selector 命中率和交付时序只有
+在对应 timeline telemetry 实际存在时才能形成评测结论。
+
+## 质量与成本判断
+
+理论上，Structured 模式通过移除平铺 `MEMORY.md`、避免重复正文和按需窗口读取
+降低主上下文 Token；通过完整主题地图、metadata fast recall 和 selector 精排
+提高召回稳定性。但这些是设计假设，不等同于实证结论。
+
+评测必须在同模型、同仓库 revision、同记忆 corpus、独立新上下文和固定 case
+下比较 Legacy 与 Structured，并同时报告：
+
+- 任务质量与召回质量；
+- recall contribution、miss 和工具失败；
+- 主链路与后台任务 Token；
+- P50/P95 延迟与 runtime failure；
+- selector timing、Complete Tree/Subtree 交付和正文读取行为。
+
+当前大样本评测显示质量差值的置信区间仍跨零，因此不能宣称质量显著提高；
+Token 和中位延迟有下降信号，但本轮 correctness 修复后仍需使用同一批 case
+重新验证。
+
+## 非目标
+
+本设计当前不包含：
+
+- 在一次 headless 调用退出前自动连续跑完全部 migration batch；
+- 无评测依据地扩大 selector manifest 预算；
+- 让 Dream 承担旧语料全量迁移；
+- 让 Generic Subagent 或外部记忆系统自动获得 managed-memory 权限；
+- 把逐 case 评测数据、原始 API 日志或完整 transcript 纳入设计文档。
 
 ## 总结
 
-这个设计把 Auto Memory 从“被动注入的文本块”改成“可导航、可检索、可按需读取的记忆地图”。完整树提供全局理解，focused subtree 提供当前任务聚焦，keywords/phrases 提供确定性召回入口，`search_memory` 提供正文按需读取能力，legacy fallback 和后台迁移保证已有记忆可以无损过渡。
+结构化召回把 Auto Memory 从平铺正文集合改为可导航、可检索、可按需读取的
+记忆地图。Complete Tree 提供全局理解，Focused Subtree 提供当前任务焦点，
+fast scorer 和 selector 共同选择路径，`search_memory` 管理正文窗口和驻留状态，
+Legacy fallback 与增量迁移保护已有用户记忆。协议切换、安全边界和压缩反馈
+共同保证这套链路不仅能召回，还能在长会话和多 session 环境中维持一致性。
